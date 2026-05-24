@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useGroupStore } from "../store/groupStore";
 
 export default function GroupDetail() {
@@ -19,6 +19,42 @@ export default function GroupDetail() {
       </View>
     );
   }
+
+  const confirmDeleteExpense = (expenseId: string) => {
+    Alert.alert(
+      "Delete expense?",
+      "This will permanently remove this expense from the group.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteExpense(group.id, expenseId),
+        },
+      ]
+    );
+  };
+
+  const confirmSettleUp = () => {
+    Alert.alert(
+      "Settle up?",
+      "This will clear all expenses and reset the group balances.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Settle Up",
+          style: "destructive",
+          onPress: () => settleGroup(group.id),
+        },
+      ]
+    );
+  };
 
   const totalSpent = group.expenses.reduce(
     (total, expense) => total + expense.amount,
@@ -121,10 +157,7 @@ export default function GroupDetail() {
       </Pressable>
 
       {group.expenses.length > 0 && (
-        <Pressable
-          style={styles.secondaryButton}
-          onPress={() => settleGroup(group.id)}
-        >
+        <Pressable style={styles.secondaryButton} onPress={confirmSettleUp}>
           <Text style={styles.secondaryButtonText}>Settle Up</Text>
         </Pressable>
       )}
@@ -177,7 +210,7 @@ export default function GroupDetail() {
 
                 <Pressable
                   style={styles.iconButton}
-                  onPress={() => deleteExpense(group.id, expense.id)}
+                  onPress={() => confirmDeleteExpense(expense.id)}
                 >
                   <Text style={styles.iconText}>🗑️</Text>
                 </Pressable>
