@@ -26,24 +26,29 @@ export default function GroupDetail() {
   );
 
   const balances: Record<string, number> = {};
-
   group.members.forEach((member) => {
     balances[member] = 0;
   });
 
   group.expenses.forEach((expense) => {
-    if (expense.isCoveredByPayer || expense.splitBetween.length === 0) {
-      return;
-    }
+    if (expense.isCoveredByPayer || expense.splitBetween.length === 0) return;
 
-    const splitAmount = expense.amount / expense.splitBetween.length;
+    const coveredMembers = expense.coveredMembers ?? [];
 
-    expense.splitBetween.forEach((person) => {
-      if (person === expense.paidBy) {
-        balances[person] += expense.amount - splitAmount;
-      } else {
-        balances[person] -= splitAmount;
-      }
+    const allParticipants = expense.splitBetween.includes(expense.paidBy)
+      ? expense.splitBetween
+      : [...expense.splitBetween, expense.paidBy];
+
+    const splitAmount = expense.amount / allParticipants.length;
+
+    const peopleWhoPayBack = allParticipants.filter(
+      (person) =>
+        person !== expense.paidBy && !coveredMembers.includes(person)
+    );
+
+    peopleWhoPayBack.forEach((person) => {
+      balances[person] -= splitAmount;
+      balances[expense.paidBy] += splitAmount;
     });
   });
 
@@ -63,7 +68,6 @@ export default function GroupDetail() {
   while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
     const debtor = debtors[debtorIndex];
     const creditor = creditors[creditorIndex];
-
     const paymentAmount = Math.min(debtor.amount, creditor.amount);
 
     settlements.push({
@@ -109,6 +113,13 @@ export default function GroupDetail() {
         <Text style={styles.primaryButtonText}>＋ Add Expense 🐾</Text>
       </Pressable>
 
+      <Pressable
+        style={styles.editGroupButton}
+        onPress={() => router.push(`/edit-group/${group.id}`)}
+      >
+        <Text style={styles.editGroupButtonText}>✏️ Edit Group</Text>
+      </Pressable>
+
       {group.expenses.length > 0 && (
         <Pressable
           style={styles.secondaryButton}
@@ -135,9 +146,17 @@ export default function GroupDetail() {
               {expense.isCoveredByPayer ? (
                 <Text style={styles.coveredText}>Covered by payer</Text>
               ) : (
-                <Text style={styles.expenseText}>
-                  Split with {expense.splitBetween.join(", ")}
-                </Text>
+                <>
+                  <Text style={styles.expenseText}>
+                    Split with {expense.splitBetween.join(", ")}
+                  </Text>
+
+                  {(expense.coveredMembers ?? []).length > 0 && (
+                    <Text style={styles.coveredText}>
+                      Covered: {(expense.coveredMembers ?? []).join(", ")}
+                    </Text>
+                  )}
+                </>
               )}
             </View>
 
@@ -146,12 +165,23 @@ export default function GroupDetail() {
                 ${expense.amount.toFixed(2)}
               </Text>
 
-              <Pressable
-                style={styles.deleteButton}
-                onPress={() => deleteExpense(group.id, expense.id)}
-              >
-                <Text style={styles.deleteText}>🗑️</Text>
-              </Pressable>
+              <View style={styles.actionRow}>
+                <Pressable
+                  style={styles.iconButton}
+                  onPress={() =>
+                    router.push(`/edit-expense/${group.id}/${expense.id}`)
+                  }
+                >
+                  <Text style={styles.iconText}>✏️</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.iconButton}
+                  onPress={() => deleteExpense(group.id, expense.id)}
+                >
+                  <Text style={styles.iconText}>🗑️</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
         ))
@@ -284,6 +314,20 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     textAlign: "center",
   },
+  editGroupButton: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#F6DCCD",
+    marginTop: 12,
+  },
+  editGroupButtonText: {
+    color: "#5B3F2E",
+    textAlign: "center",
+    fontWeight: "900",
+    fontSize: 16,
+  },
   secondaryButton: {
     backgroundColor: "#FFFFFF",
     padding: 16,
@@ -363,14 +407,18 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#FF7F8F",
   },
-  deleteButton: {
+  actionRow: {
+    flexDirection: "row",
+    gap: 6,
     marginTop: 10,
+  },
+  iconButton: {
     backgroundColor: "#FFF7EF",
     padding: 8,
     borderRadius: 16,
   },
-  deleteText: {
-    fontSize: 18,
+  iconText: {
+    fontSize: 16,
   },
   balanceCard: {
     backgroundColor: "#FFFFFF",

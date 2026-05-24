@@ -8,29 +8,38 @@ import {
     TextInput,
     View,
 } from "react-native";
-import { useGroupStore } from "../store/groupStore";
+import { useGroupStore } from "../../store/groupStore";
 
-export default function AddExpense() {
-  const { id } = useLocalSearchParams();
+export default function EditExpense() {
+  const { groupId, expenseId } = useLocalSearchParams();
   const router = useRouter();
 
   const group = useGroupStore((state) =>
-    state.groups.find((g) => g.id === id)
+    state.groups.find((g) => g.id === groupId)
+  );
+  const editExpense = useGroupStore((state) => state.editExpense);
+
+  const expense = group?.expenses.find((item) => item.id === expenseId);
+
+  const [title, setTitle] = useState(expense?.title ?? "");
+  const [amount, setAmount] = useState(
+    expense ? expense.amount.toString() : ""
+  );
+  const [paidBy, setPaidBy] = useState(expense?.paidBy ?? "");
+  const [splitBetween, setSplitBetween] = useState<string[]>(
+    expense?.splitBetween ?? []
+  );
+  const [coveredMembers, setCoveredMembers] = useState<string[]>(
+    expense?.coveredMembers ?? []
+  );
+  const [isCoveredByPayer, setIsCoveredByPayer] = useState(
+    expense?.isCoveredByPayer ?? false
   );
 
-  const addExpense = useGroupStore((state) => state.addExpense);
-
-  const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("");
-  const [paidBy, setPaidBy] = useState("");
-  const [splitBetween, setSplitBetween] = useState<string[]>([]);
-  const [coveredMembers, setCoveredMembers] = useState<string[]>([]);
-  const [isCoveredByPayer, setIsCoveredByPayer] = useState(false);
-
-  if (!group) {
+  if (!group || !expense) {
     return (
       <View style={styles.fallback}>
-        <Text>Group not found</Text>
+        <Text>Expense not found</Text>
       </View>
     );
   }
@@ -54,7 +63,7 @@ export default function AddExpense() {
     }
   };
 
-  const handleAdd = () => {
+  const handleSave = () => {
     const amountNumber = parseFloat(amount);
 
     if (
@@ -68,8 +77,8 @@ export default function AddExpense() {
       return;
     }
 
-    addExpense(group.id, {
-      id: Date.now().toString(),
+    editExpense(group.id, expense.id, {
+      id: expense.id,
       title: title.trim(),
       amount: amountNumber,
       paidBy,
@@ -88,8 +97,8 @@ export default function AddExpense() {
     >
       <View style={styles.headerCard}>
         <Text style={styles.cat}>🐱</Text>
-        <Text style={styles.title}>Add Expense</Text>
-        <Text style={styles.subtitle}>Log a shared cost for {group.name}.</Text>
+        <Text style={styles.title}>Edit Expense</Text>
+        <Text style={styles.subtitle}>Update this shared cost.</Text>
       </View>
 
       <View style={styles.formCard}>
@@ -234,12 +243,12 @@ export default function AddExpense() {
         )}
       </View>
 
-      <Pressable style={styles.button} onPress={handleAdd}>
-        <Text style={styles.buttonText}>＋ Add Expense 🐾</Text>
+      <Pressable style={styles.button} onPress={handleSave}>
+        <Text style={styles.buttonText}>Save Changes 🐾</Text>
       </Pressable>
 
       <Text style={styles.helperText}>
-        Covered members are included in the split but do not pay their share.
+        Covered members are included in the expense but do not pay their share.
       </Text>
     </ScrollView>
   );
