@@ -1,119 +1,36 @@
 # 🐱 Tabby — Cozy Expense Splitter
 
-Tabby is a cross-platform mobile application designed to simplify shared expense tracking. It enables groups to split costs intelligently, handle real-world edge cases, and settle balances with optimized payment flows.
+Tabby is a cross-platform mobile app I built to make shared expense splitting feel simple, fair, and less awkward. The idea came from real situations where splitting costs is not always as easy as “everyone pays the same amount.”
 
-Built with a strong focus on **engineering quality, algorithmic thinking, and real-world usability**, Tabby goes beyond basic expense apps by supporting flexible financial scenarios.
+Sometimes one person covers another person. Sometimes only part of the group joined an expense. Sometimes someone is included in the activity, but the payer does not expect them to pay back. I wanted to build an app that could handle those real-life situations instead of only supporting the most basic version of expense splitting.
 
----
-
-## 🚀 Why This Project Matters
-
-Most expense splitters handle only simple equal splits.
-
-Tabby is designed for **real-life situations**, including:
-- One person covering others
-- Partial participation in expenses
-- Users included but not required to pay
-- Minimizing the number of transactions needed to settle debts
-
-This project demonstrates the ability to build **production-quality mobile software** with both **technical depth and product intuition**.
+Tabby was built with React Native, Expo, TypeScript, Zustand, and AsyncStorage.
 
 ---
 
-## ✨ Features
+## Why I Built This
 
-- 📱 Cross-platform mobile app (iOS + Android)
-- 💸 Intelligent expense splitting:
-  - Equal splits
-  - Custom participant selection
-  - Covered members (included but don’t pay)
-  - “Covered by payer” (no repayment expected)
-- 🧠 Real-time balance calculation
-- 🔄 Optimized settlement suggestions
-- ✏️ Edit & delete expenses
-- 👥 Dynamic group member editing
-- ⚠️ Confirmation modals for safe actions
-- 💾 Persistent local storage (offline-first)
-- 🎨 Clean, modern, user-friendly UI
+I built Tabby because splitting money in a group can become confusing very quickly.
+
+A lot of expense-splitting examples assume that everyone is involved equally, but real life is usually messier. Friends might go out together, but not everyone orders the same thing. Someone might treat another person. A group member might be included in the event but covered by the payer. After a few expenses, it becomes hard to know who actually owes what.
+
+I wanted Tabby to solve that problem in a way that feels easy to use on a phone.
+
+This project also helped me practice mobile development with a stronger focus on logic and state management. Unlike some apps where the main challenge is the UI, Tabby required me to think carefully about data modeling, balance calculations, edge cases, and how to keep the user experience clear.
 
 ---
 
-## 🧠 Engineering Highlights
+## Overview
 
-### 🔹 Advanced Financial Logic
-Implemented a flexible system that supports:
-- Partial participation in expenses  
-- Covered members within shared costs  
-- Dynamic recalculation of balances on updates  
+Tabby lets users create groups, add members, record expenses, choose who participated in each expense, and calculate who owes whom.
 
----
+The app supports more realistic splitting behavior, including covered members and optimized settlement suggestions. It is designed to work offline using local persistent storage, so users can open the app and manage expenses without needing a backend.
 
-### 🔹 Debt Settlement Algorithm
-Designed a **greedy algorithm** to minimize the number of transactions:
-
-- Converts raw balances into optimized payment flows  
-- Reduces unnecessary payments between users  
-- Handles uneven splits and real-world constraints  
+The goal was to create something that feels simple on the surface but has solid logic underneath.
 
 ---
 
-### 🔹 State Management Architecture
-- Built using **Zustand**
-- Lightweight and scalable global state
-- Clear separation between UI and business logic
-
----
-
-### 🔹 TypeScript & Data Modeling
-- Strongly typed models (`Group`, `Expense`)
-- Safe handling of optional and conditional fields
-- Improved reliability and maintainability
-
----
-
-### 🔹 Offline-First System Design
-- Data persisted using **AsyncStorage**
-- Fully functional without backend
-- Instant read/write performance
-
----
-
-### 🔹 Cross-Platform Development
-- Single codebase deployed to:
-  - iOS Simulator
-  - Android Emulator
-- Debugged and ensured consistency across platforms
-
----
-
-### 🔹 UX & Product Thinking
-Designed for real-world usage:
-
-- Supports “treat” scenarios (payer covers all)
-- Handles edge cases without breaking logic
-- Provides safe destructive actions (confirmation modals)
-- Clean and intuitive interaction flow
-
----
-
-### 🔹 Debugging & Iteration
-- Resolved platform-specific issues (iOS vs Android)
-- Fixed state synchronization bugs
-- Iteratively refined UI and logic through testing
-
----
-
-## 🛠️ Tech Stack
-
-- **React Native**
-- **Expo**
-- **TypeScript**
-- **Zustand (State Management)**
-- **AsyncStorage (Persistence)**
-
----
-
-## 📸 Screenshots
+## Screenshots
 
 <p align="center">
   <img src="assets/screenshots/home.png" width="250" />
@@ -128,24 +45,285 @@ Designed for real-world usage:
 
 ---
 
-## 🧪 Example Scenario
+## What the App Does
 
-A group of 6 people shares a $108 expense:
-- One person pays
-- One member is covered (does not pay)
+Tabby lets users:
 
-Tabby correctly:
-- Splits cost across participants
-- Excludes covered member from repayment
-- Calculates accurate balances
-- Generates optimized settlement payments
+* Create expense groups
+* Add and edit group members
+* Add shared expenses
+* Choose who paid for an expense
+* Choose who participated in an expense
+* Mark members as covered
+* Edit and delete expenses
+* View real-time balance calculations
+* See optimized settlement suggestions
+* Persist data locally on the device
+* Use the app on both iOS and Android
 
 ---
 
-## 🚀 Getting Started
+## Key Features
+
+### Group Management
+
+Users can create groups and manage group members dynamically. This made the app feel more realistic because groups often change, and users need a way to update members without restarting the entire group.
+
+Group features include:
+
+* Create new groups
+* Add group members
+* Edit existing group members
+* View group details
+* Delete or update expenses within a group
+
+### Expense Tracking
+
+Each expense stores who paid, how much they paid, and who was included in the split.
+
+Expense features include:
+
+* Add a new expense
+* Edit an existing expense
+* Delete an expense
+* Select the payer
+* Select participants
+* Support equal splitting
+* Recalculate balances when expenses change
+
+### Covered Members
+
+One of the main features I wanted to include was support for covered members.
+
+A covered member is someone who is included in the activity but does not need to pay back. For example, if one friend treats another friend, the covered person is still part of the expense, but they should not owe money.
+
+This was important because it made the app handle more realistic social situations instead of only supporting perfect equal splits.
+
+### Optimized Settlement Suggestions
+
+Tabby calculates the simplest way for the group to settle debts.
+
+Instead of showing every small balance between every person, the app generates optimized payment suggestions. This reduces the number of payments needed and makes the final result easier to understand.
+
+For example, if one person owes money and another person is owed money, Tabby connects those balances directly instead of creating unnecessary extra transactions.
+
+### Offline-First Storage
+
+Tabby uses local persistent storage so the app can work without a backend.
+
+This made sense for the project because expense data should be fast to access, simple to update, and available immediately when the app opens.
+
+---
+
+## Example Scenario
+
+A group of six people shares a $108 expense.
+
+One person pays for the full expense, but one member is covered and does not need to pay back.
+
+Tabby handles this by:
+
+* Including the correct participants
+* Excluding the covered member from repayment
+* Calculating who owes money
+* Calculating who should receive money
+* Generating a cleaner settlement plan
+
+This scenario was one of the reasons I built the app because it represents the kind of edge case that simple expense splitters often do not handle well.
+
+---
+
+## Technical Approach
+
+I built Tabby with React Native and Expo because I wanted to create a mobile app that could run on both iOS and Android from one codebase.
+
+I used TypeScript because the app depends on structured data like groups, expenses, members, participants, and covered users. Having typed models helped make the splitting logic safer and easier to reason about.
+
+For state management, I used Zustand. I wanted something lightweight but still organized enough to manage groups, expenses, and balance updates across the app.
+
+For persistence, I used AsyncStorage so user data could remain saved locally even after closing the app.
+
+---
+
+## Tech Stack
+
+* React Native
+* Expo
+* TypeScript
+* Zustand
+* AsyncStorage
+* iOS Simulator
+* Android Emulator
+* Git
+* GitHub
+
+---
+
+## Engineering Highlights
+
+### Expense Splitting Logic
+
+The main technical challenge was making sure the balance logic worked across different situations.
+
+The app supports:
+
+* Equal splits
+* Partial participation
+* Covered members
+* Updated group members
+* Edited expenses
+* Deleted expenses
+* Dynamic recalculation of balances
+
+I had to make sure that each change updated the final balances correctly.
+
+### Debt Settlement Algorithm
+
+I designed a greedy settlement algorithm to reduce the number of payments needed between group members.
+
+The algorithm works by separating people into two groups:
+
+* People who owe money
+* People who should receive money
+
+Then it matches those balances together until the group is settled.
+
+This helped me practice algorithmic thinking in a real app feature, not just in a coding problem.
+
+### State Management
+
+I used Zustand to keep the app state organized and easier to update.
+
+The store manages group data, expense data, member updates, and balance recalculation. This helped keep business logic separate from the UI and made the app easier to debug as more features were added.
+
+### TypeScript Data Modeling
+
+I created typed models for the main app data, including groups and expenses.
+
+This helped with:
+
+* Safer updates
+* Clearer function inputs
+* Better handling of optional fields
+* Easier debugging
+* More maintainable logic
+
+### Cross-Platform Testing
+
+I tested the app on both the iOS Simulator and Android Emulator.
+
+This was helpful because some UI behavior and interaction details worked differently across platforms. Testing on both helped me catch layout and state issues that I would not have noticed if I only tested on one platform.
+
+---
+
+## Design Process
+
+I wanted Tabby to feel friendly and simple, not like a finance app that feels stressful to use.
+
+The “cozy” style was intentional. Since splitting expenses can already be uncomfortable, I wanted the app to feel approachable. The UI focuses on clear actions, readable balances, and simple flows for adding or editing expenses.
+
+I also added confirmation modals for destructive actions like deleting expenses. This made the app feel safer because users are less likely to accidentally remove important data.
+
+---
+
+## Project Structure
+
+```text
+app/
+├── index.tsx
+├── group/
+│   └── [id].tsx
+├── add-expense.tsx
+└── edit-group.tsx
+
+components/
+├── BalanceCard.tsx
+├── ExpenseCard.tsx
+├── MemberSelector.tsx
+└── SettlementList.tsx
+
+store/
+└── useAppStore.ts
+
+types/
+└── index.ts
+
+utils/
+├── splitLogic.ts
+└── settlementLogic.ts
+
+assets/
+└── screenshots/
+```
+
+---
+
+## Getting Started
 
 ```bash
 git clone https://github.com/szzbj720/tabby.git
 cd tabby
 npm install
 npx expo start
+```
+
+Then run the app on an iOS Simulator or Android Emulator through Expo.
+
+---
+
+## What I Learned
+
+Tabby helped me grow a lot because it combined mobile development with real logic-heavy features.
+
+Some of the biggest things I learned were:
+
+* How to build a cross-platform app with React Native and Expo
+* How to use TypeScript to model app data more safely
+* How to manage global state with Zustand
+* How to persist local data using AsyncStorage
+* How to design and debug expense-splitting logic
+* How to handle edge cases like covered members and partial participation
+* How to create optimized settlement suggestions
+* How to test and fix differences between iOS and Android
+* How to build a simple user experience around complicated logic
+
+One challenge I worked through was making sure the covered-member logic did not break the balance calculations. A covered person should be included in the situation, but not treated the same way as someone who needs to pay back. Getting that logic right made the project feel much closer to a real-world expense app.
+
+Another challenge was keeping the UI simple while the logic became more complex. I wanted the user to feel like they were just adding an expense, even though the app was doing more calculation in the background.
+
+---
+
+## Future Improvements
+
+Some features I would like to add next include:
+
+* Cloud sync across devices
+* User accounts
+* Invite links for shared groups
+* Receipt image uploads
+* Custom split amounts
+* Percentage-based splits
+* Currency selection
+* Dark mode
+* Export group summaries
+* Push notifications for unsettled balances
+* App Store and Google Play deployment
+
+---
+
+## Why This Project Matters To Me
+
+Tabby matters to me because it helped me build something practical while also pushing me to think deeply about logic, edge cases, and user experience.
+
+It was not just a UI project. I had to think about how people actually split expenses, how to represent those situations in code, and how to make the final result easy to understand.
+
+This project helped me become more confident with React Native, TypeScript, state management, persistence, and cross-platform mobile development.
+
+---
+
+## Author
+
+Selena Zhang
+
+GitHub:
+https://github.com/szzbj720
