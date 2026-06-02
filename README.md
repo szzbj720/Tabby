@@ -20,6 +20,16 @@ This project also helped me practice mobile development with a stronger focus on
 
 ---
 
+## The Problem
+
+Most expense splitters work well when every person participates equally, but real group expenses rarely work that way.
+
+Friends split dinners unevenly. One person might cover another person's cost. Some group members join certain activities but not others. As these situations add up, it becomes difficult to know who actually owes money and how the group should settle up.
+
+I noticed that many expense-splitting examples and simple calculators do not handle these situations very well. I wanted to build something that reflected how people actually split expenses in real life rather than how we assume they do on paper.
+
+---
+
 ## Overview
 
 Tabby lets users create groups, add members, record expenses, choose who participated in each expense, and calculate who owes whom.
@@ -27,6 +37,16 @@ Tabby lets users create groups, add members, record expenses, choose who partici
 The app supports more realistic splitting behavior, including covered members and optimized settlement suggestions. It is designed to work offline using local persistent storage, so users can open the app and manage expenses without needing a backend.
 
 The goal was to create something that feels simple on the surface but has solid logic underneath.
+
+---
+
+## My Solution
+
+I built Tabby as a mobile-first expense sharing app focused on handling real-world edge cases while keeping the user experience simple.
+
+Instead of expecting every expense to be split equally, Tabby allows users to define who participated, who paid, and who may be covered by another person. The app then handles the calculations automatically and generates settlement suggestions that reduce unnecessary transactions.
+
+My goal was to make complicated expense situations feel straightforward without requiring users to think about the underlying math.
 
 ---
 
@@ -159,7 +179,7 @@ For persistence, I used AsyncStorage so user data could remain saved locally eve
 
 ---
 
-## Engineering Highlights
+## Engineering and Product Challenges
 
 ### Expense Splitting Logic
 
@@ -223,6 +243,20 @@ I wanted Tabby to feel friendly and simple, not like a finance app that feels st
 The “cozy” style was intentional. Since splitting expenses can already be uncomfortable, I wanted the app to feel approachable. The UI focuses on clear actions, readable balances, and simple flows for adding or editing expenses.
 
 I also added confirmation modals for destructive actions like deleting expenses. This made the app feel safer because users are less likely to accidentally remove important data.
+
+---
+
+## Product Decisions
+
+A few product decisions shaped the direction of Tabby:
+
+* I chose to support covered members because treating someone is a common social situation that many expense apps overlook.
+* I focused on reducing the number of settlement transactions because users care more about who to pay than seeing every balance calculation.
+* I kept the expense creation flow simple even though the underlying logic is more complex.
+* I prioritized offline functionality because group expenses are often tracked casually and should be available instantly.
+* I designed the interface to feel friendly rather than financial since the goal is helping friends coordinate, not managing investments.
+
+Throughout development, I tried to balance flexibility with simplicity. The challenge was allowing realistic expense scenarios without overwhelming users with too many options.
 
 ---
 
@@ -293,6 +327,25 @@ Another challenge was keeping the UI simple while the logic became more complex.
 
 ---
 
+## What I'd Improve Next
+
+If I continued developing Tabby, I would focus on making it easier for groups to collaborate and manage expenses together.
+
+Some improvements I would prioritize include:
+
+* Shared cloud-based groups
+* Real-time syncing across devices
+* Group invite links
+* Receipt scanning and OCR support
+* Custom and percentage-based splits
+* Payment platform integrations
+* Analytics for recurring group spending
+* App Store and Google Play deployment
+
+I would also spend more time collecting feedback from people who regularly split expenses with friends, roommates, and travel groups. While the current version solves the core problem, observing how real users interact with the app would help identify pain points and opportunities for improvement.
+
+---
+
 ## Future Improvements
 
 Some features I would like to add next include:
@@ -315,9 +368,10 @@ Some features I would like to add next include:
 
 Tabby matters to me because it helped me build something practical while also pushing me to think deeply about logic, edge cases, and user experience.
 
-It was not just a UI project. I had to think about how people actually split expenses, how to represent those situations in code, and how to make the final result easy to understand.
+It was not just a UI project. I had to think about how people actually split expenses, how to represent those situations in code, and how to make the final result easy to understand. 
 
-This project helped me become more confident with React Native, TypeScript, state management, persistence, and cross-platform mobile development.
+This project helped me become more confident not only as a mobile developer, but also as someone interested in product development. Building Tabby required me to think about real user behavior, edge cases, tradeoffs, and how to turn complex calculations into a simple user experience. It reinforced my interest in building products that solve practical problems while remaining intuitive and enjoyable to use.
+
 
 ---
 
