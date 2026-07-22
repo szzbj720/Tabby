@@ -14,8 +14,10 @@ export default function GroupDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
+  const groupId = Array.isArray(id) ? id[0] : id;
+
   const group = useGroupStore((state) =>
-    state.groups.find((g) => g.id === id)
+    state.groups.find((currentGroup) => currentGroup.id === groupId)
   );
 
   const deleteExpense = useGroupStore((state) => state.deleteExpense);
@@ -83,123 +85,133 @@ export default function GroupDetail() {
     ]);
   };
 
+  /*
+   * Store and calculate monetary values as integer cents.
+   * This prevents floating-point rounding problems such as:
+   * $40.30 + $20.30 not matching $60.59.
+   */
   const totalSpentCents = group.expenses.reduce(
-  (total, expense) => total + Math.round(expense.amount * 100),
-  0
-);
-
-// All balances are stored as integer cents.
-const balances: Record<string, number> = {};
-
-group.members.forEach((member) => {
-  balances[member] = 0;
-});
-
-group.expenses.forEach((expense) => {
-  if (expense.isCoveredByPayer || expense.splitBetween.length === 0) {
-    return;
-  }
-
-  const coveredMembers = expense.coveredMembers ?? [];
-
-  // Remove duplicates while making sure the payer is included.
-  const allParticipants = Array.from(
-    new Set(
-      expense.splitBetween.includes(expense.paidBy)
-        ? expense.splitBetween
-        : [...expense.splitBetween, expense.paidBy]
-    )
+    (total, expense) => total + Math.round(expense.amount * 100),
+    0
   );
 
-  const totalCents = Math.round(expense.amount * 100);
-  const baseShareCents = Math.floor(
-    totalCents / allParticipants.length
-  );
+  const balances: Record<string, number> = {};
 
-  let remainingCents = totalCents % allParticipants.length;
-
-  const shares: Record<string, number> = {};
-
-  // Distribute leftover cents deterministically.
-  allParticipants.forEach((person) => {
-    shares[person] =
-      baseShareCents + (remainingCents > 0 ? 1 : 0);
-
-    if (remainingCents > 0) {
-      remainingCents--;
-    }
+  group.members.forEach((member) => {
+    balances[member] = 0;
   });
 
-  allParticipants.forEach((person) => {
-    // The payer does not repay themselves.
-    if (person === expense.paidBy) {
+  group.expenses.forEach((expense) => {
+    if (expense.isCoveredByPayer || expense.splitBetween.length === 0) {
       return;
     }
 
-    // The payer is covering this member's portion.
-    if (coveredMembers.includes(person)) {
+    const coveredMembers = expense.coveredMembers ?? [];
+
+    const participantsWithPayer = expense.splitBetween.includes(expense.paidBy)
+      ? expense.splitBetween
+      : [...expense.splitBetween, expense.paidBy];
+
+    // Remove duplicate participant names.
+    const allParticipants = Array.from(new Set(participantsWithPayer));
+
+    if (allParticipants.length === 0) {
       return;
     }
 
-    const shareCents = shares[person] ?? 0;
+    const totalCents = Math.round(expense.amount * 100);
+    const baseShareCents = Math.floor(
+      totalCents / allParticipants.length
+    );
 
-    balances[person] -= shareCents;
-    balances[expense.paidBy] += shareCents;
-  });
-});
+    let remainingCents = totalCents % allParticipants.length;
 
-const debtors = Object.entries(balances)
-  .filter(([, balanceCents]) => balanceCents < 0)
-  .map(([name, balanceCents]) => ({
-    name,
-    amountCents: Math.abs(balanceCents),
-  }));
+    const shares: Record<string, number> = {};
 
-const creditors = Object.entries(balances)
-  .filter(([, balanceCents]) => balanceCents > 0)
-  .map(([name, balanceCents]) => ({
-    name,
-    amountCents: balanceCents,
-  }));
+    /*
+     * Any cents that cannot be divided evenly are distributed
+     * one at a time in participant order.
+     */
+    allParticipants.forEach((person) => {
+      const extraCent = remainingCents > 0 ? 1 : 0;
 
-const settlements: {
-  from: string;
-  to: string;
-  amountCents: number;
-}[] = [];
+      shares[person] = baseShareCents + extraCent;
 
-let debtorIndex = 0;
-let creditorIndex = 0;
+      if (remainingCents > 0) {
+        remainingCents -= 1;
+      }
+    });
 
-while (
-  debtorIndex < debtors.length &&
-  creditorIndex < creditors.length
-) {
-  const debtor = debtors[debtorIndex];
-  const creditor = creditors[creditorIndex];
+    allParticipants.forEach((person) => {
+      // The payer does not owe money to themselves.
+      if (person === expense.paidBy) {
+        return;
+      }
 
-  const paymentCents = Math.min(
-    debtor.amountCents,
-    creditor.amountCents
-  );
+      // The payer is covering this member's share.
+      if (coveredMembers.includes(person)) {
+        return;
+      }
 
-  settlements.push({
-    from: debtor.name,
-    to: creditor.name,
-    amountCents: paymentCents,
+      const shareCents = shares[person] ?? 0;
+
+      balances[person] -= shareCents;
+      balances[expense.paidBy] += shareCents;
+    });
   });
 
-  debtor.amountCents -= paymentCents;
-  creditor.amountCents -= paymentCents;
+  const debtors = Object.entries(balances)
+    .filter(([, balanceCents]) => balanceCents < 0)
+    .map(([name, balanceCents]) => ({
+      name,
+      amountCents: Math.abs(balanceCents),
+    }));
 
-  if (debtor.amountCents === 0) {
-    debtorIndex++;
-  }
+  const creditors = Object.entries(balances)
+    .filter(([, balanceCents]) => balanceCents > 0)
+    .map(([name, balanceCents]) => ({
+      name,
+      amountCents: balanceCents,
+    }));
 
-  if (creditor.amountCents === 0) {
-    creditorIndex++;
+  const settlements: {
+    from: string;
+    to: string;
+    amountCents: number;
+  }[] = [];
+
+  let debtorIndex = 0;
+  let creditorIndex = 0;
+
+  while (
+    debtorIndex < debtors.length &&
+    creditorIndex < creditors.length
+  ) {
+    const debtor = debtors[debtorIndex];
+    const creditor = creditors[creditorIndex];
+
+    const paymentCents = Math.min(
+      debtor.amountCents,
+      creditor.amountCents
+    );
+
+    settlements.push({
+      from: debtor.name,
+      to: creditor.name,
+      amountCents: paymentCents,
+    });
+
+    debtor.amountCents -= paymentCents;
+    creditor.amountCents -= paymentCents;
+
+    if (debtor.amountCents === 0) {
+      debtorIndex += 1;
+    }
+
+    if (creditor.amountCents === 0) {
+      creditorIndex += 1;
+    }
   }
-}
 
   return (
     <ScrollView
@@ -208,7 +220,9 @@ while (
     >
       <View style={styles.headerCard}>
         <Text style={styles.cat}>🐱</Text>
+
         <Text style={styles.title}>{group.name}</Text>
+
         <Text style={styles.subtitle}>
           Shared spending, settled softly.
         </Text>
@@ -218,13 +232,15 @@ while (
             <Text style={styles.summaryNumber}>
               {group.members.length}
             </Text>
+
             <Text style={styles.summaryLabel}>Members</Text>
           </View>
 
           <View style={styles.summaryPillGreen}>
             <Text style={styles.summaryNumber}>
-              ${totalSpent.toFixed(2)}
+              ${(totalSpentCents / 100).toFixed(2)}
             </Text>
+
             <Text style={styles.summaryLabel}>Total</Text>
           </View>
         </View>
@@ -264,6 +280,7 @@ while (
       {group.expenses.length === 0 ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyTitle}>No expenses yet</Text>
+
           <Text style={styles.emptyText}>
             Add your first shared cost.
           </Text>
@@ -335,7 +352,7 @@ while (
 
       <View style={styles.balanceCard}>
         {group.members.map((member) => {
-          const balance = balances[member];
+          const balanceCents = balances[member] ?? 0;
 
           return (
             <View key={member} style={styles.balanceRow}>
@@ -346,13 +363,15 @@ while (
               <Text
                 style={[
                   styles.balanceValue,
-                  balance > 0.01 && styles.positive,
-                  balance < -0.01 && styles.negative,
+                  balanceCents > 0 && styles.positive,
+                  balanceCents < 0 && styles.negative,
                 ]}
               >
-                {balance >= 0
-                  ? `gets $${balance.toFixed(2)}`
-                  : `owes $${Math.abs(balance).toFixed(2)}`}
+                {balanceCents >= 0
+                  ? `gets $${(balanceCents / 100).toFixed(2)}`
+                  : `owes $${(
+                      Math.abs(balanceCents) / 100
+                    ).toFixed(2)}`}
               </Text>
             </View>
           );
@@ -368,19 +387,23 @@ while (
           <Text style={styles.emptyTitle}>
             Everyone is settled up
           </Text>
+
           <Text style={styles.emptyText}>
             No payments needed right now.
           </Text>
         </View>
       ) : (
         settlements.map((settlement, index) => (
-          <View key={index} style={styles.settlementCard}>
+          <View
+            key={`${settlement.from}-${settlement.to}-${index}`}
+            style={styles.settlementCard}
+          >
             <Text style={styles.settlementText}>
               {settlement.from} pays {settlement.to}
             </Text>
 
             <Text style={styles.settlementAmount}>
-              ${settlement.amount.toFixed(2)}
+              ${(settlement.amountCents / 100).toFixed(2)}
             </Text>
           </View>
         ))
