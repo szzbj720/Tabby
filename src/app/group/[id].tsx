@@ -83,87 +83,123 @@ export default function GroupDetail() {
     ]);
   };
 
-  const totalSpent = group.expenses.reduce(
-    (total, expense) => total + expense.amount,
-    0
+  const totalSpentCents = group.expenses.reduce(
+  (total, expense) => total + Math.round(expense.amount * 100),
+  0
+);
+
+// All balances are stored as integer cents.
+const balances: Record<string, number> = {};
+
+group.members.forEach((member) => {
+  balances[member] = 0;
+});
+
+group.expenses.forEach((expense) => {
+  if (expense.isCoveredByPayer || expense.splitBetween.length === 0) {
+    return;
+  }
+
+  const coveredMembers = expense.coveredMembers ?? [];
+
+  // Remove duplicates while making sure the payer is included.
+  const allParticipants = Array.from(
+    new Set(
+      expense.splitBetween.includes(expense.paidBy)
+        ? expense.splitBetween
+        : [...expense.splitBetween, expense.paidBy]
+    )
   );
 
-  const balances: Record<string, number> = {};
+  const totalCents = Math.round(expense.amount * 100);
+  const baseShareCents = Math.floor(
+    totalCents / allParticipants.length
+  );
 
-  group.members.forEach((member) => {
-    balances[member] = 0;
+  let remainingCents = totalCents % allParticipants.length;
+
+  const shares: Record<string, number> = {};
+
+  // Distribute leftover cents deterministically.
+  allParticipants.forEach((person) => {
+    shares[person] =
+      baseShareCents + (remainingCents > 0 ? 1 : 0);
+
+    if (remainingCents > 0) {
+      remainingCents--;
+    }
   });
 
-  group.expenses.forEach((expense) => {
-    if (expense.isCoveredByPayer || expense.splitBetween.length === 0) {
+  allParticipants.forEach((person) => {
+    // The payer does not repay themselves.
+    if (person === expense.paidBy) {
       return;
     }
 
-    const coveredMembers = expense.coveredMembers ?? [];
+    // The payer is covering this member's portion.
+    if (coveredMembers.includes(person)) {
+      return;
+    }
 
-    const allParticipants = expense.splitBetween.includes(expense.paidBy)
-      ? expense.splitBetween
-      : [...expense.splitBetween, expense.paidBy];
+    const shareCents = shares[person] ?? 0;
 
-    const splitAmount = expense.amount / allParticipants.length;
+    balances[person] -= shareCents;
+    balances[expense.paidBy] += shareCents;
+  });
+});
 
-    const peopleWhoPayBack = allParticipants.filter(
-      (person) =>
-        person !== expense.paidBy && !coveredMembers.includes(person)
-    );
+const debtors = Object.entries(balances)
+  .filter(([, balanceCents]) => balanceCents < 0)
+  .map(([name, balanceCents]) => ({
+    name,
+    amountCents: Math.abs(balanceCents),
+  }));
 
-    peopleWhoPayBack.forEach((person) => {
-      balances[person] -= splitAmount;
-      balances[expense.paidBy] += splitAmount;
-    });
+const creditors = Object.entries(balances)
+  .filter(([, balanceCents]) => balanceCents > 0)
+  .map(([name, balanceCents]) => ({
+    name,
+    amountCents: balanceCents,
+  }));
+
+const settlements: {
+  from: string;
+  to: string;
+  amountCents: number;
+}[] = [];
+
+let debtorIndex = 0;
+let creditorIndex = 0;
+
+while (
+  debtorIndex < debtors.length &&
+  creditorIndex < creditors.length
+) {
+  const debtor = debtors[debtorIndex];
+  const creditor = creditors[creditorIndex];
+
+  const paymentCents = Math.min(
+    debtor.amountCents,
+    creditor.amountCents
+  );
+
+  settlements.push({
+    from: debtor.name,
+    to: creditor.name,
+    amountCents: paymentCents,
   });
 
-  const debtors = Object.entries(balances)
-    .filter(([, balance]) => balance < -0.01)
-    .map(([name, balance]) => ({
-      name,
-      amount: Math.abs(balance),
-    }));
+  debtor.amountCents -= paymentCents;
+  creditor.amountCents -= paymentCents;
 
-  const creditors = Object.entries(balances)
-    .filter(([, balance]) => balance > 0.01)
-    .map(([name, balance]) => ({
-      name,
-      amount: balance,
-    }));
-
-  const settlements: {
-    from: string;
-    to: string;
-    amount: number;
-  }[] = [];
-
-  let debtorIndex = 0;
-  let creditorIndex = 0;
-
-  while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
-    const debtor = debtors[debtorIndex];
-    const creditor = creditors[creditorIndex];
-
-    const paymentAmount = Math.min(debtor.amount, creditor.amount);
-
-    settlements.push({
-      from: debtor.name,
-      to: creditor.name,
-      amount: paymentAmount,
-    });
-
-    debtor.amount -= paymentAmount;
-    creditor.amount -= paymentAmount;
-
-    if (debtor.amount < 0.01) {
-      debtorIndex++;
-    }
-
-    if (creditor.amount < 0.01) {
-      creditorIndex++;
-    }
+  if (debtor.amountCents === 0) {
+    debtorIndex++;
   }
+
+  if (creditor.amountCents === 0) {
+    creditorIndex++;
+  }
+}
 
   return (
     <ScrollView
